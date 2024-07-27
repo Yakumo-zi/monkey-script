@@ -21,6 +21,10 @@ func TestNextToken(t *testing.T) {
   }else{
     return false;
   }
+  10 == 9
+  10 != 9 
+  10 >= 9
+  10 <= 9
   `
 	tests := []struct {
 		expectedType    token.TokenType
@@ -91,6 +95,18 @@ func TestNextToken(t *testing.T) {
 		{token.FALSE, "false"},
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
+		{token.INT, "10"},
+		{token.EQUAL, "=="},
+		{token.INT, "9"},
+		{token.INT, "10"},
+		{token.NE, "!="},
+		{token.INT, "9"},
+		{token.INT, "10"},
+		{token.GE, ">="},
+		{token.INT, "9"},
+		{token.INT, "10"},
+		{token.LE, "<="},
+		{token.INT, "9"},
 		{token.EOF, ""},
 	}
 	l := NewLexer(input)

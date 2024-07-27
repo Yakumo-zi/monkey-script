@@ -14,8 +14,12 @@ const (
 	STAR   = "*"
 	SLASH  = "/"
 
-	LT = "<"
-	GT = ">"
+	LT    = "<"
+	GT    = ">"
+	EQUAL = "=="
+	NE    = "!="
+	LE    = "<="
+	GE    = ">="
 
 	COMMA     = ","
 	SEMICOLON = ";"
