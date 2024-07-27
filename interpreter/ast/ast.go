@@ -63,3 +63,20 @@ func (i *Identifier) TokenLiteral() string {
 func (i *Identifier) expressionNode() {
 	panic("unimplemented")
 }
+
+var _ Statement = (*ReturnStatement)(nil)
+
+type ReturnStatement struct {
+	Token       token.Token
+	ReturnValue Expression
+}
+
+// TokenLiteral implements Statement.
+func (r *ReturnStatement) TokenLiteral() string {
+	return r.Token.Literal
+}
+
+// statementNode implements Statement.
+func (r *ReturnStatement) statementNode() {
+	panic("unimplemented")
+}
