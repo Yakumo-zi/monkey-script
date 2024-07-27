@@ -81,7 +81,7 @@ func (l *Lexer) NextToken() token.Token {
 	case '=':
 		if l.peekChar() == '=' {
 			l.readChar()
-			tok = token.NewToken(token.EQUAL, "==")
+			tok = token.NewToken(token.EQ, "==")
 		} else {
 
 			tok = token.NewToken(token.ASSIGN, string(l.ch))

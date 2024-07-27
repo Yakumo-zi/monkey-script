@@ -96,7 +96,7 @@ func TestNextToken(t *testing.T) {
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
 		{token.INT, "10"},
-		{token.EQUAL, "=="},
+		{token.EQ, "=="},
 		{token.INT, "9"},
 		{token.INT, "10"},
 		{token.NE, "!="},
