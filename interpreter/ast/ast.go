@@ -1,9 +1,13 @@
 package ast
 
-import "interpreter/token"
+import (
+	"bytes"
+	"interpreter/token"
+)
 
 type Node interface {
 	TokenLiteral() string
+	String() string
 }
 type Statement interface {
 	Node
@@ -21,6 +25,15 @@ type Program struct {
 	Statements []Statement
 }
 
+// String implements Node.
+func (p *Program) String() string {
+	var out bytes.Buffer
+	for _, s := range p.Statements {
+		out.WriteString(s.String())
+	}
+	return out.String()
+}
+
 func (p *Program) TokenLiteral() string {
 	if len(p.Statements) > 0 {
 		return p.Statements[0].TokenLiteral()
@@ -35,6 +48,19 @@ type LetStatement struct {
 	Token token.Token
 	Name  *Identifier
 	Value Expression
+}
+
+// String implements Statement.
+func (l *LetStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(l.TokenLiteral() + " ")
+	out.WriteString(l.Name.String())
+	out.WriteString(" = ")
+	if l.Value != nil {
+		out.WriteString(l.Value.String())
+	}
+	out.WriteString(";")
+	return out.String()
 }
 
 // TokenLiteral implements Statement.
@@ -54,6 +80,11 @@ type Identifier struct {
 	Value string
 }
 
+// String implements Expression.
+func (i *Identifier) String() string {
+	return i.Value
+}
+
 // TokenLiteral implements Expression.
 func (i *Identifier) TokenLiteral() string {
 	return i.Token.Literal
@@ -71,6 +102,17 @@ type ReturnStatement struct {
 	ReturnValue Expression
 }
 
+// String implements Statement.
+func (r *ReturnStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(r.TokenLiteral() + " ")
+	if r.ReturnValue != nil {
+		out.WriteString(r.ReturnValue.String())
+	}
+	out.WriteString(";")
+	return out.String()
+}
+
 // TokenLiteral implements Statement.
 func (r *ReturnStatement) TokenLiteral() string {
 	return r.Token.Literal
@@ -78,5 +120,30 @@ func (r *ReturnStatement) TokenLiteral() string {
 
 // statementNode implements Statement.
 func (r *ReturnStatement) statementNode() {
+	panic("unimplemented")
+}
+
+var _ Statement = (*ExpressionStatement)(nil)
+
+type ExpressionStatement struct {
+	Token      token.Token
+	Expression Expression
+}
+
+// String implements Statement.
+func (e *ExpressionStatement) String() string {
+	if e.Expression != nil {
+		return e.Expression.String()
+	}
+	return ""
+}
+
+// TokenLiteral implements Statement.
+func (e *ExpressionStatement) TokenLiteral() string {
+	return e.Token.Literal
+}
+
+// statementNode implements Statement.
+func (e *ExpressionStatement) statementNode() {
 	panic("unimplemented")
 }
