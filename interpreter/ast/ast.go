@@ -227,3 +227,25 @@ func (i *InfixExpression) TokenLiteral() string {
 func (i *InfixExpression) expressionNode() {
 	panic("unimplemented")
 }
+
+var _ Expression = (*Boolean)(nil)
+
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+// String implements Expression.
+func (b *Boolean) String() string {
+	return b.Token.Literal
+}
+
+// TokenLiteral implements Expression.
+func (b *Boolean) TokenLiteral() string {
+	return b.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (b *Boolean) expressionNode() {
+	panic("unimplemented")
+}
