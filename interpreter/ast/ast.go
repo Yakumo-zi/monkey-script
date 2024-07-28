@@ -249,3 +249,63 @@ func (b *Boolean) TokenLiteral() string {
 func (b *Boolean) expressionNode() {
 	panic("unimplemented")
 }
+
+var _ Expression = (*IfExpression)(nil)
+
+type IfExpression struct {
+	Token     token.Token
+	Condition Expression
+	Then      *BlockStatement
+	Else      *BlockStatement
+}
+
+// String implements Expression.
+func (i *IfExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("if")
+	out.WriteString(i.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(i.Then.String())
+	if i.Else != nil {
+		out.WriteString("else")
+		out.WriteString(i.Else.String())
+	}
+	return out.String()
+
+}
+
+// TokenLiteral implements Expression.
+func (i *IfExpression) TokenLiteral() string {
+	return i.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (i *IfExpression) expressionNode() {
+	panic("unimplemented")
+}
+
+var _ Statement = (*BlockStatement)(nil)
+
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+// String implements Statement.
+func (b *BlockStatement) String() string {
+	var out bytes.Buffer
+	for _, s := range b.Statements {
+		out.WriteString(s.String())
+	}
+	return out.String()
+}
+
+// TokenLiteral implements Statement.
+func (b *BlockStatement) TokenLiteral() string {
+	return b.Token.Literal
+}
+
+// statementNode implements Statement.
+func (b *BlockStatement) statementNode() {
+	panic("unimplemented")
+}
