@@ -345,3 +345,35 @@ func (f *FunctionLiteral) TokenLiteral() string {
 func (f *FunctionLiteral) expressionNode() {
 	panic("unimplemented")
 }
+
+var _ Expression = (*CallExpression)(nil)
+
+type CallExpression struct {
+	Token     token.Token
+	Function  Expression
+	Arguments []Expression
+}
+
+// String implements Expression.
+func (c *CallExpression) String() string {
+	var out bytes.Buffer
+	args := []string{}
+	for _, a := range c.Arguments {
+		args = append(args, a.String())
+	}
+	out.WriteString(c.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ","))
+	out.WriteString(")")
+	return out.String()
+}
+
+// TokenLiteral implements Expression.
+func (c *CallExpression) TokenLiteral() string {
+	return c.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (c *CallExpression) expressionNode() {
+	panic("unimplemented")
+}
