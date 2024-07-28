@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"interpreter/token"
+	"strings"
 )
 
 type Node interface {
@@ -294,9 +295,11 @@ type BlockStatement struct {
 // String implements Statement.
 func (b *BlockStatement) String() string {
 	var out bytes.Buffer
+	out.WriteString("{")
 	for _, s := range b.Statements {
 		out.WriteString(s.String())
 	}
+	out.WriteString("}")
 	return out.String()
 }
 
@@ -307,5 +310,38 @@ func (b *BlockStatement) TokenLiteral() string {
 
 // statementNode implements Statement.
 func (b *BlockStatement) statementNode() {
+	panic("unimplemented")
+}
+
+var _ Expression = (*FunctionLiteral)(nil)
+
+type FunctionLiteral struct {
+	Token      token.Token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+// String implements Expression.
+func (f *FunctionLiteral) String() string {
+	var out bytes.Buffer
+	params := []string{}
+	for _, p := range f.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString(f.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ","))
+	out.WriteString("(")
+	out.WriteString(f.Body.String())
+	return out.String()
+}
+
+// TokenLiteral implements Expression.
+func (f *FunctionLiteral) TokenLiteral() string {
+	return f.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (f *FunctionLiteral) expressionNode() {
 	panic("unimplemented")
 }
