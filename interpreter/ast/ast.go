@@ -147,3 +147,25 @@ func (e *ExpressionStatement) TokenLiteral() string {
 func (e *ExpressionStatement) statementNode() {
 	panic("unimplemented")
 }
+
+var _ Expression = (*IntegerLiteral)(nil)
+
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+// String implements Expression.
+func (i *IntegerLiteral) String() string {
+	return i.Token.Literal
+}
+
+// TokenLiteral implements Expression.
+func (i *IntegerLiteral) TokenLiteral() string {
+	return i.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (i *IntegerLiteral) expressionNode() {
+	panic("unimplemented")
+}
