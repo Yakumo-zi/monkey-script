@@ -17,7 +17,26 @@ const (
 	ERROR_OBJ    = "ERROR"
 	FUNCTION_OBJ = "FUNCTIOn"
 	STRING_OBJ   = "STRING"
+	BUILTIN_OBJ  = "BUILTIN"
 )
+
+type BuiltinFunction func(args ...Object) Object
+
+var _ Object = (*Builtin)(nil)
+
+type Builtin struct {
+	Fn BuiltinFunction
+}
+
+// Inspect implements Object.
+func (b *Builtin) Inspect() string {
+	return "builtin function "
+}
+
+// Type implements Object.
+func (b *Builtin) Type() ObjectType {
+	return BUILTIN_OBJ
+}
 
 type Object interface {
 	Type() ObjectType
