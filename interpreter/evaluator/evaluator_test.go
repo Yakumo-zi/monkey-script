@@ -232,6 +232,72 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("hello" + " " + "world!")`, 12},
 		{`len(1)`, "argument to `len` not supported, got INTEGER"},
 		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+		{`first([1, 2, 3])`, 1},
+		{`first([])`, nil},
+		{`first(1)`, "argument to `first` must be ARRAY, got INTEGER"},
+		{`last([1, 2, 3])`, 3},
+		{`last([])`, nil},
+		{`last(1)`, "argument to `last` must be ARRAY, got INTEGER"},
+		{`rest([1, 2, 3])`, []int64{2, 3}},
+		{`rest([])`, nil},
+		{`rest(1)`, "argument to `rest` must be ARRAY, got INTEGER"},
+	}
+	for idx, tt := range tests {
+		evaluated := testEval(tt.input)
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			if !ok {
+				t.Errorf("no error object returned. got=%T (%+v),idx=%d", evaluated, evaluated, idx)
+				continue
+			}
+			if errObj.Message != expected {
+				t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
+			}
+		case []int64:
+			if !testArrayObject(t, evaluated, expected) {
+				t.Errorf("wrong array object. got=%+v", evaluated)
+			}
+		case nil:
+			if !testNullObject(t, evaluated) {
+				t.Errorf("wrong null object. got=%+v", evaluated)
+			}
+		}
+	}
+}
+
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2*2, 3+3]"
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.ArrayObject)
+	if !ok {
+		t.Fatalf("object is not Array. got=%T (%+v)", evaluated, evaluated)
+	}
+	if len(result.Elements) != 3 {
+		t.Fatalf("array has wrong number of elements. got=%d", len(result.Elements))
+	}
+	testIntegerObject(t, result.Elements[0], 1)
+	testIntegerObject(t, result.Elements[1], 4)
+	testIntegerObject(t, result.Elements[2], 6)
+}
+
+func TestArrayIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected any
+	}{
+		{"[1, 2, 3][0]", 1},
+		{"[1, 2, 3][1]", 2},
+		{"[1, 2, 3][2]", 3},
+		{"let i = 0; [1][i];", 1},
+		{"[1, 2, 3][1 + 1];", 3},
+		{"let myArray = [1, 2, 3]; myArray[2];", 3},
+		{"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6},
+		{"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2},
+		{"[1, 2, 3][3]", nil},
+		{"[1, 2, 3][-1]", nil},
 	}
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
@@ -239,17 +305,27 @@ func TestBuiltinFunctions(t *testing.T) {
 		if ok {
 			testIntegerObject(t, evaluated, int64(integer))
 		} else {
-			errObj, ok := evaluated.(*object.Error)
-			if !ok {
-				t.Errorf("object is not Error. got=%T (%+v)", evaluated, evaluated)
-				continue
-			}
-			if errObj.Message != tt.expected {
-				t.Errorf("wrong error message. expected=%q, got=%q", tt.expected, errObj.Message)
-			}
+			testNullObject(t, evaluated)
 		}
 	}
 }
+
+func testArrayObject(t *testing.T, obj object.Object, expected []int64) bool {
+	result, ok := obj.(*object.ArrayObject)
+	if !ok {
+		t.Errorf("object is not Array. got=%T (%+v)", obj, obj)
+		return false
+	}
+	if len(result.Elements) != len(expected) {
+		t.Errorf("array has wrong number of elements. got=%d", len(result.Elements))
+		return false
+	}
+	for i, exp := range expected {
+		testIntegerObject(t, result.Elements[i], exp)
+	}
+	return true
+}
+
 func testNullObject(t *testing.T, obj object.Object) bool {
 	if obj != NULL {
 		t.Errorf("object is not NULL. got=%T (%+v)", obj, obj)

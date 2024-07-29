@@ -331,7 +331,7 @@ func (f *FunctionLiteral) String() string {
 	out.WriteString(f.TokenLiteral())
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ","))
-	out.WriteString("(")
+	out.WriteString(")")
 	out.WriteString(f.Body.String())
 	return out.String()
 }
@@ -397,5 +397,65 @@ func (s *StringLiteral) TokenLiteral() string {
 
 // expressionNode implements Expression.
 func (s *StringLiteral) expressionNode() {
+	panic("unimplemented")
+}
+
+var _ Expression = (*ArrayLiteral)(nil)
+
+type ArrayLiteral struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+// String implements Expression.
+func (a *ArrayLiteral) String() string {
+	var out bytes.Buffer
+	elems := []string{}
+	for _, el := range a.Elements {
+		elems = append(elems, el.String())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elems, ", "))
+	out.WriteString("]")
+	return out.String()
+}
+
+// TokenLiteral implements Expression.
+func (a *ArrayLiteral) TokenLiteral() string {
+	return a.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (a *ArrayLiteral) expressionNode() {
+	panic("unimplemented")
+}
+
+var _ Expression = (*IndexExpression)(nil)
+
+type IndexExpression struct {
+	Token token.Token
+	Left  Expression
+	Index Expression
+}
+
+// String implements Expression.
+func (i *IndexExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(i.Left.String())
+	out.WriteString("[")
+	out.WriteString(i.Index.String())
+	out.WriteString("]")
+	out.WriteString(")")
+	return out.String()
+}
+
+// TokenLiteral implements Expression.
+func (i *IndexExpression) TokenLiteral() string {
+	return i.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (i *IndexExpression) expressionNode() {
 	panic("unimplemented")
 }

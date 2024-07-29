@@ -18,6 +18,7 @@ const (
 	FUNCTION_OBJ = "FUNCTIOn"
 	STRING_OBJ   = "STRING"
 	BUILTIN_OBJ  = "BUILTIN"
+	ARRAY_OBJ    = "ARRAY"
 )
 
 type BuiltinFunction func(args ...Object) Object
@@ -137,7 +138,6 @@ func (f *FunctionObject) Inspect() string {
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(")")
 	out.WriteString(f.Body.String())
-	out.WriteString("\n}")
 	return out.String()
 }
 
@@ -160,4 +160,28 @@ func (s *StringObject) Inspect() string {
 // Type implements Object.
 func (s *StringObject) Type() ObjectType {
 	return STRING_OBJ
+}
+
+var _ Object = (*ArrayObject)(nil)
+
+type ArrayObject struct {
+	Elements []Object
+}
+
+// Inspect implements Object.
+func (a *ArrayObject) Inspect() string {
+	var out bytes.Buffer
+	elems := []string{}
+	for _, e := range a.Elements {
+		elems = append(elems, e.Inspect())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elems, ", "))
+	out.WriteString("]")
+	return out.String()
+}
+
+// Type implements Object.
+func (a *ArrayObject) Type() ObjectType {
+	return ARRAY_OBJ
 }
