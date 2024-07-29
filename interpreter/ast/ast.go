@@ -295,11 +295,11 @@ type BlockStatement struct {
 // String implements Statement.
 func (b *BlockStatement) String() string {
 	var out bytes.Buffer
-	out.WriteString("{")
+	out.WriteString("{\n")
 	for _, s := range b.Statements {
 		out.WriteString(s.String())
 	}
-	out.WriteString("}")
+	out.WriteString("\n}")
 	return out.String()
 }
 
