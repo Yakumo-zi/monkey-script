@@ -377,3 +377,25 @@ func (c *CallExpression) TokenLiteral() string {
 func (c *CallExpression) expressionNode() {
 	panic("unimplemented")
 }
+
+var _ Expression = (*StringLiteral)(nil)
+
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+// String implements Expression.
+func (s *StringLiteral) String() string {
+	return s.Token.Literal
+}
+
+// TokenLiteral implements Expression.
+func (s *StringLiteral) TokenLiteral() string {
+	return s.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (s *StringLiteral) expressionNode() {
+	panic("unimplemented")
+}
