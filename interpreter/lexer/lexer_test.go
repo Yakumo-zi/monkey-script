@@ -30,6 +30,7 @@ func TestNextToken(t *testing.T) {
 
   "foo bar"
   [1,2]
+  {"name":"monkey"}
   `
 	tests := []struct {
 		expectedType    token.TokenType
@@ -119,6 +120,11 @@ func TestNextToken(t *testing.T) {
 		{token.COMMA, ","},
 		{token.INT, "2"},
 		{token.RBRACKET, "]"},
+		{token.LBRACE, "{"},
+		{token.STRING, "name"},
+		{token.COLON, ":"},
+		{token.STRING, "monkey"},
+		{token.RBRACE, "}"},
 		{token.EOF, ""},
 	}
 	l := NewLexer(input)

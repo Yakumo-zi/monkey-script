@@ -3,11 +3,16 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"interpreter/ast"
 	"strings"
 )
 
 type ObjectType string
+
+type Hashable interface {
+	HashKey() HashKey
+}
 
 const (
 	INTEGER_OBJ  = "INTEGER"
@@ -19,6 +24,7 @@ const (
 	STRING_OBJ   = "STRING"
 	BUILTIN_OBJ  = "BUILTIN"
 	ARRAY_OBJ    = "ARRAY"
+	HASH_OBJ     = "HASH"
 )
 
 type BuiltinFunction func(args ...Object) Object
@@ -184,4 +190,68 @@ func (a *ArrayObject) Inspect() string {
 // Type implements Object.
 func (a *ArrayObject) Type() ObjectType {
 	return ARRAY_OBJ
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+var _ Object = (*HashObject)(nil)
+
+type HashObject struct {
+	Pairs map[HashKey]HashPair
+}
+
+// Inspect implements Object.
+func (h *HashObject) Inspect() string {
+	var out bytes.Buffer
+	pairs := []string{}
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}
+
+// Type implements Object.
+func (h *HashObject) Type() ObjectType {
+	return HASH_OBJ
+}
+
+var _ Object = (*HashKey)(nil)
+
+type HashKey struct {
+	Ty    ObjectType
+	Value uint64
+}
+
+// Inspect implements Object.
+func (h *HashKey) Inspect() string {
+	return fmt.Sprintf("%d", h.Value)
+}
+
+// Type implements Object.
+func (h *HashKey) Type() ObjectType {
+	return h.Ty
+}
+
+func (b *Boolean) HashKey() HashKey {
+	var value uint64
+	if b.Value {
+		value = 1
+	}
+	return HashKey{Ty: b.Type(), Value: value}
+}
+
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Ty: i.Type(), Value: uint64(i.Value)}
+}
+
+func (s *StringObject) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Ty: s.Type(), Value: h.Sum64()}
 }

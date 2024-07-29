@@ -129,6 +129,10 @@ func TestErrorHandling(t *testing.T) {
 		{"5; true+false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"if (10>1) { true+false; }", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"if (10>1) { if (10>1) { return true+false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN"},
+		{"foobar", "identifier not found: foobar"},
+		{"\"Hello\" - \"World\"", "unknown operator: STRING - STRING"},
+		{"len(1)", "argument to `len` not supported, got INTEGER"},
+		{"len(\"one\", \"two\")", "wrong number of arguments. got=2, want=1"},
 	}
 	for idx, tt := range tests {
 		evaluated := testEval(tt.input)
@@ -307,6 +311,71 @@ func TestArrayIndexExpressions(t *testing.T) {
 		} else {
 			testNullObject(t, evaluated)
 		}
+	}
+}
+
+func TestHashLiterals(t *testing.T) {
+	input := `let two = "two";
+  {
+    "one": 10-9,
+    two: 1+1,
+    "thr" + "ee": 6/2,
+    4: 4,
+    true: 5,
+    false: 6
+  }`
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.HashObject)
+	if !ok {
+		t.Fatalf("object is not Hash. got=%T (%+v)", evaluated, evaluated)
+	}
+	expected := map[object.HashKey]int64{
+		(&object.StringObject{Value: "one"}).HashKey():   1,
+		(&object.StringObject{Value: "two"}).HashKey():   2,
+		(&object.StringObject{Value: "three"}).HashKey(): 3,
+		(&object.Integer{Value: 4}).HashKey():            4,
+		TRUE.HashKey():                                   5,
+		FALSE.HashKey():                                  6,
+	}
+	if len(result.Pairs) != len(expected) {
+		t.Fatalf("hash has wrong number of pairs. got=%d", len(result.Pairs))
+	}
+	for expectedKey, expectedValue := range expected {
+		pair, ok := result.Pairs[expectedKey]
+		if !ok {
+			t.Errorf("no pair for given key in Pairs")
+		}
+		testIntegerObject(t, pair.Value, expectedValue)
+	}
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected any
+	}{
+		{`{"foo": 5}["foo"]`, 5},
+		{`{"foo": 5}["bar"]`, nil},
+		{`let key = "foo"; {"foo": 5}[key]`, 5},
+		{`{}["foo"]`, nil},
+		{`{5: 5}[5]`, 5},
+		{`{true: 5}[true]`, 5},
+		{`{false: 5}[false]`, 5},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		if isError(evaluated) {
+			t.Errorf("error returned: %s", evaluated.Inspect())
+		}
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case nil:
+			testNullObject(t, evaluated)
+		default:
+			t.Errorf("unhandled type. got=%T", tt.expected)
+		}
+
 	}
 }
 

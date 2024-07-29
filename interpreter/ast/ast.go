@@ -459,3 +459,33 @@ func (i *IndexExpression) TokenLiteral() string {
 func (i *IndexExpression) expressionNode() {
 	panic("unimplemented")
 }
+
+var _ Expression = (*HashLiteral)(nil)
+
+type HashLiteral struct {
+	Token token.Token
+	Pairs map[Expression]Expression
+}
+
+// String implements Expression.
+func (h *HashLiteral) String() string {
+	var out bytes.Buffer
+	pairs := []string{}
+	for key, value := range h.Pairs {
+		pairs = append(pairs, key.String()+":"+value.String())
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}
+
+// TokenLiteral implements Expression.
+func (h *HashLiteral) TokenLiteral() string {
+	return h.Token.Literal
+}
+
+// expressionNode implements Expression.
+func (h *HashLiteral) expressionNode() {
+	panic("unimplemented")
+}
