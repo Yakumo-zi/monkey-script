@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"interpreter/ast"
 	"interpreter/object"
 )
@@ -73,6 +74,8 @@ func isTruthy(obj object.Object) bool {
 
 func evalInfixExpression(op string, left object.Object, right object.Object) object.Object {
 	switch {
+	case left.Type() != right.Type():
+		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(op, left, right)
 	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
@@ -82,10 +85,11 @@ func evalInfixExpression(op string, left object.Object, right object.Object) obj
 		case "!=":
 			return nativeBoolToBooleanObject(left != right)
 		default:
-			return NULL
+			break
 		}
+		fallthrough
 	default:
-		return NULL
+		return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 
 	}
 }
@@ -113,7 +117,7 @@ func evalIntegerInfixExpression(op string, left, right object.Object) object.Obj
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 
 	default:
-		return NULL
+		return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 	}
 }
 
@@ -121,6 +125,9 @@ func evalProgram(prog *ast.Program) object.Object {
 	var result object.Object
 	for _, stmt := range prog.Statements {
 		result = Eval(stmt)
+		if error, ok := result.(*object.Error); ok {
+			return error
+		}
 		if returnValue, ok := result.(*object.ReturnObject); ok {
 			return returnValue.Value
 		}
@@ -135,13 +142,13 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 	case "-":
 		return evalMinusPrefixOperatorExpression(right)
 	default:
-		return NULL
+		return newError("unknown operator: %s%s", operator, right.Type())
 	}
 }
 
 func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return NULL
+		return newError("unknown operator: -%s", right.Type())
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
@@ -165,4 +172,8 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 		return TRUE
 	}
 	return FALSE
+}
+
+func newError(format string, a ...any) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }

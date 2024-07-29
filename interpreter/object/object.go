@@ -9,6 +9,7 @@ const (
 	BOOLEAN_OBJ = "BOOLEAN"
 	NULL_OBJ    = "NULL"
 	RETURN_OBJ  = "RETURN"
+	ERROR_OBJ   = "ERROR"
 )
 
 type Object interface {
@@ -70,4 +71,21 @@ func (r *ReturnObject) Inspect() string {
 // Type implements Object.
 func (r *ReturnObject) Type() ObjectType {
 	return RETURN_OBJ
+}
+
+var _ Object = (*Error)(nil)
+
+type Error struct {
+	Message string
+}
+
+// Inspect implements Object.
+func (e *Error) Inspect() string {
+
+	return "ERROR: " + e.Message
+}
+
+// Type implements Object.
+func (e *Error) Type() ObjectType {
+	return ERROR_OBJ
 }
