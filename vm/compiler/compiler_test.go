@@ -58,6 +58,13 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+	}
+	runCompilerTests(t, tests)
+
+}
+
+func TestBooleanExpressions(t *testing.T) {
+	tests := []compilerTestCase{
 		{
 			input:             "true",
 			expectedConstants: []any{},
@@ -74,15 +81,54 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+		{
+			input:             "1>2",
+			expectedConstants: []any{1, 2},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpGreaterThan),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "1<2",
+			expectedConstants: []any{2, 1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpGreaterThan),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "1==2",
+			expectedConstants: []any{1, 2},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpEqual),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "1!=2",
+			expectedConstants: []any{1, 2},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 	runCompilerTests(t, tests)
-
 }
 
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	t.Helper()
 
-	for _, tt := range tests {
+	for idx, tt := range tests {
 		program := parse(tt.input)
 		compiler := NewCompiler()
 		err := compiler.Compile(program)
@@ -93,13 +139,12 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 		bytecode := compiler.ByteCode()
 		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
 		if err != nil {
-
-			t.Fatalf("testInstructions error:%s", err)
+			t.Fatalf("testInstructions error:%s\nidx=%d", err, idx)
 		}
 
 		err = testConstants(t, tt.expectedConstants, bytecode.Constants)
 		if err != nil {
-			t.Fatalf("testConstants error:%s", err)
+			t.Fatalf("testConstants error:%s\nidx=%d", err, idx)
 		}
 	}
 }
@@ -139,6 +184,8 @@ func testInstructions(expected []code.Instructions, actual code.Instructions) er
 	}
 	for i, ins := range concatted {
 		if actual[i] != ins {
+			fmt.Println(concatted.String())
+			fmt.Println(actual.String())
 			return fmt.Errorf("wrong instruction at %d.\nwant=%q\ngot=%q", i, ins, actual[i])
 		}
 	}
