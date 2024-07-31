@@ -54,6 +54,17 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpBang:
+			err := v.executeBangOpeartor()
+			if err != nil {
+				return err
+			}
+
+		case code.OpMinus:
+			err := v.executeMinusOperator()
+			if err != nil {
+				return err
+			}
 		case code.OpPop:
 			_, err := v.pop()
 			if err != nil {
@@ -73,7 +84,32 @@ func (v *VM) Run() error {
 	}
 	return nil
 }
+func (v *VM) executeMinusOperator() error {
+	operand, err := v.pop()
+	if err != nil {
+		return err
+	}
+	if result, ok := operand.(*object.Integer); ok {
+		return v.push(&object.Integer{Value: -result.Value})
+	}
+	return fmt.Errorf("unknown type:%s of minus operator", operand.Type())
+}
 
+func (v *VM) executeBangOpeartor() error {
+	operand, err := v.pop()
+	if err != nil {
+		return err
+	}
+	switch operand {
+	case True:
+		return v.push(False)
+	case False:
+		return v.push(True)
+	default:
+		return v.push(True)
+	}
+
+}
 func (v *VM) executeBinaryOperation(op code.Opcode) error {
 	right, err := v.pop()
 	if err != nil {
