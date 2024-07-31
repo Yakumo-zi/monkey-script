@@ -22,8 +22,8 @@ func TestIntegerArithmetic(t *testing.T) {
 			input:             "1+2",
 			expectedConstants: []any{1, 2},
 			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
-				code.Make(code.OpConstant, 2),
 			},
 		},
 	}
@@ -43,6 +43,7 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 			t.Fatalf("compiler error:%s", err)
 		}
 		bytecode := compiler.ByteCode()
+		fmt.Println(bytecode.Instructions.String())
 		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
 		if err != nil {
 
