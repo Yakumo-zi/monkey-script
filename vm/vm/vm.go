@@ -9,6 +9,9 @@ import (
 
 const StackSize = 2048
 
+var True = &object.Boolean{Value: true}
+var False = &object.Boolean{Value: false}
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
@@ -46,14 +49,8 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
-		case code.OpAdd:
-			fallthrough
-		case code.OpSub:
-			fallthrough
-		case code.OpMul:
-			fallthrough
-		case code.OpDiv:
-			err := v.executeIntegerInfixExpression(op)
+		case code.OpDiv, code.OpAdd, code.OpMul, code.OpSub:
+			err := v.executeBinaryOperation(op)
 			if err != nil {
 				return err
 			}
@@ -62,12 +59,22 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpTrue:
+			err := v.push(True)
+			if err != nil {
+				return err
+			}
+		case code.OpFalse:
+			err := v.push(False)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (v *VM) executeIntegerInfixExpression(op code.Opcode) error {
+func (v *VM) executeBinaryOperation(op code.Opcode) error {
 	right, err := v.pop()
 	if err != nil {
 		return err
@@ -76,8 +83,19 @@ func (v *VM) executeIntegerInfixExpression(op code.Opcode) error {
 	if err != nil {
 		return err
 	}
+	leftType := left.Type()
+	rightType := right.Type()
+	if leftType == object.INTEGER_OBJ && rightType == object.INTEGER_OBJ {
+		return v.executeIntegerOperation(op, left, right)
+	}
+	return nil
+
+}
+
+func (v *VM) executeIntegerOperation(op code.Opcode, left, right object.Object) error {
 	leftValue := left.(*object.Integer).Value
 	rightValue := right.(*object.Integer).Value
+	var err error
 	switch op {
 	case code.OpAdd:
 		err = v.push(&object.Integer{Value: leftValue + rightValue})
