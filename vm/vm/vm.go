@@ -25,6 +25,9 @@ func NewVM(bytecode *compiler.ByteCode) *VM {
 	}
 }
 
+func (v *VM) LastPoppedStackElem() object.Object {
+	return v.stack[v.sp]
+}
 func (v *VM) StackTop() object.Object {
 	if v.sp == 0 {
 		return nil
@@ -44,17 +47,27 @@ func (v *VM) Run() error {
 				return err
 			}
 		case code.OpAdd:
-			err := v.executeInfixExpression(code.OpAdd)
+			fallthrough
+		case code.OpSub:
+			fallthrough
+		case code.OpMul:
+			fallthrough
+		case code.OpDiv:
+			err := v.executeIntegerInfixExpression(op)
 			if err != nil {
 				return err
 			}
-			return nil
+		case code.OpPop:
+			_, err := v.pop()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (v *VM) executeInfixExpression(op code.Opcode) error {
+func (v *VM) executeIntegerInfixExpression(op code.Opcode) error {
 	right, err := v.pop()
 	if err != nil {
 		return err
@@ -68,11 +81,18 @@ func (v *VM) executeInfixExpression(op code.Opcode) error {
 	switch op {
 	case code.OpAdd:
 		err = v.push(&object.Integer{Value: leftValue + rightValue})
-		if err != nil {
-			return err
+	case code.OpSub:
+		err = v.push(&object.Integer{Value: leftValue - rightValue})
+	case code.OpMul:
+		err = v.push(&object.Integer{Value: leftValue * rightValue})
+	case code.OpDiv:
+		if rightValue == 0 {
+			return fmt.Errorf("can't div zero")
 		}
+		err = v.push(&object.Integer{Value: leftValue / rightValue})
+
 	}
-	return nil
+	return err
 }
 
 func (v *VM) pop() (object.Object, error) {
