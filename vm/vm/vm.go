@@ -49,7 +49,7 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
-		case code.OpDiv, code.OpAdd, code.OpMul, code.OpSub:
+		case code.OpDiv, code.OpAdd, code.OpMul, code.OpSub, code.OpEqual, code.OpNotEqual, code.OpGreaterThan:
 			err := v.executeBinaryOperation(op)
 			if err != nil {
 				return err
@@ -88,8 +88,23 @@ func (v *VM) executeBinaryOperation(op code.Opcode) error {
 	if leftType == object.INTEGER_OBJ && rightType == object.INTEGER_OBJ {
 		return v.executeIntegerOperation(op, left, right)
 	}
+	if leftType == object.BOOLEAN_OBJ && rightType == object.BOOLEAN_OBJ {
+		return v.executeBooleanOperation(op, left, right)
+	}
 	return nil
 
+}
+
+func (v *VM) executeBooleanOperation(op code.Opcode, left, right object.Object) error {
+	leftValue := left.(*object.Boolean).Value
+	rightValue := right.(*object.Boolean).Value
+	if op == code.OpEqual {
+		v.push(&object.Boolean{Value: leftValue == rightValue})
+
+	} else {
+		v.push(&object.Boolean{Value: leftValue != rightValue})
+	}
+	return nil
 }
 
 func (v *VM) executeIntegerOperation(op code.Opcode, left, right object.Object) error {
@@ -108,7 +123,24 @@ func (v *VM) executeIntegerOperation(op code.Opcode, left, right object.Object) 
 			return fmt.Errorf("can't div zero")
 		}
 		err = v.push(&object.Integer{Value: leftValue / rightValue})
-
+	case code.OpEqual:
+		if leftValue == rightValue {
+			err = v.push(True)
+		} else {
+			err = v.push(False)
+		}
+	case code.OpGreaterThan:
+		if leftValue > rightValue {
+			err = v.push(True)
+		} else {
+			err = v.push(False)
+		}
+	case code.OpNotEqual:
+		if leftValue == rightValue {
+			err = v.push(False)
+		} else {
+			err = v.push(True)
+		}
 	}
 	return err
 }
