@@ -62,6 +62,7 @@ func TestBooleanExpressions(t *testing.T) {
 		{"!!false", false},
 		{"!!5", false},
 		{"!5", true},
+		{"!(if(false){5;})", true},
 	}
 	runVmTests(t, tests)
 }
@@ -94,6 +95,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		vm := NewVM(comp.ByteCode())
 		err = vm.Run()
 		if err != nil {
+			fmt.Println(comp.ByteCode().Instructions.String())
 			t.Fatalf("vm error: %s", err)
 		}
 		stackElem := vm.LastPoppedStackElem()

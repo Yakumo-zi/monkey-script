@@ -108,6 +108,8 @@ func isTruthy(obj object.Object) bool {
 	switch obj := obj.(type) {
 	case *object.Boolean:
 		return obj.Value
+	case *object.Null:
+		return false
 	default:
 		return true
 	}
@@ -132,6 +134,8 @@ func (v *VM) executeBangOpeartor() error {
 	case True:
 		return v.push(False)
 	case False:
+		return v.push(True)
+	case Null:
 		return v.push(True)
 	default:
 		return v.push(True)
