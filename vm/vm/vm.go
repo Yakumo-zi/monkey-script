@@ -80,9 +80,31 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpJump:
+			pos := int(code.ReadUint16(v.instructions[ip+1:]))
+			ip = pos - 1
+		case code.OpJumpNotTruthy:
+			pos := int(code.ReadUint16(v.instructions[ip+1:]))
+			ip += 2
+			condition, err := v.pop()
+			if err != nil {
+				return err
+			}
+			if !isTruthy(condition) {
+				ip = pos - 1
+			}
 		}
 	}
 	return nil
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	default:
+		return true
+	}
 }
 func (v *VM) executeMinusOperator() error {
 	operand, err := v.pop()
@@ -92,7 +114,7 @@ func (v *VM) executeMinusOperator() error {
 	if result, ok := operand.(*object.Integer); ok {
 		return v.push(&object.Integer{Value: -result.Value})
 	}
-	return fmt.Errorf("unknown type:%s of minus operator", operand.Type())
+	return fmt.Errorf("unsupported type:%s for negation operator", operand.Type())
 }
 
 func (v *VM) executeBangOpeartor() error {
