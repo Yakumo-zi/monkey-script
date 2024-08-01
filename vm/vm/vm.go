@@ -11,6 +11,7 @@ const StackSize = 2048
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
+var Null = &object.Null{}
 
 type VM struct {
 	constants    []object.Object
@@ -92,6 +93,11 @@ func (v *VM) Run() error {
 			}
 			if !isTruthy(condition) {
 				ip = pos - 1
+			}
+		case code.OpNull:
+			err := v.push(Null)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -205,7 +211,7 @@ func (v *VM) executeIntegerOperation(op code.Opcode, left, right object.Object) 
 
 func (v *VM) pop() (object.Object, error) {
 	if v.sp <= 0 {
-		return nil, fmt.Errorf("stack overflow")
+		return nil, fmt.Errorf("nothing in stack")
 	}
 	ret := v.stack[v.sp-1]
 	v.sp -= 1

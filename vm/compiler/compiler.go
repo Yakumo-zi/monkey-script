@@ -123,22 +123,21 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if c.lastInstructionIsPop() {
 			c.removeLastPop()
 		}
+		jumpPos := c.emit(code.OpJump, 9999)
 		afterThenPos := len([]byte(c.instructions))
 		c.changeOperand(pos, afterThenPos)
-
 		if node.Else != nil {
-			jumpPos := c.emit(code.OpJump, 9999)
-			afterThenPos := len([]byte(c.instructions))
-			c.changeOperand(pos, afterThenPos)
 			if err = c.Compile(node.Else); err != nil {
 				return err
 			}
 			if c.lastInstructionIsPop() {
 				c.removeLastPop()
 			}
-			afterElsePos := len([]byte(c.instructions))
-			c.changeOperand(jumpPos, afterElsePos)
+		} else {
+			c.emit(code.OpNull)
 		}
+		afterElsePos := len([]byte(c.instructions))
+		c.changeOperand(jumpPos, afterElsePos)
 		return nil
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
