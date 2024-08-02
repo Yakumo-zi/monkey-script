@@ -65,6 +65,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		sym := c.symbolTabble.Define(node.Name.Value)
 		c.emit(code.OpSetGlobal, sym.Index)
+	case *ast.ArrayLiteral:
+		for _, e := range node.Elements {
+			err := c.Compile(e)
+			if err != nil {
+				return err
+			}
+		}
+		c.emit(code.OpArray, len(node.Elements))
 	case *ast.PrefixExpression:
 		err := c.Compile(node.Right)
 		if err != nil {

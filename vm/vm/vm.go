@@ -118,7 +118,22 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
-
+		case code.OpArray:
+			num := code.ReadUint16(v.instructions[ip+1:])
+			ip += 2
+			arr := &object.ArrayObject{Elements: make([]object.Object, num)}
+			for num > 0 {
+				elm, err := v.pop()
+				if err != nil {
+					return err
+				}
+				arr.Elements[num-1] = elm
+				num -= 1
+			}
+			err := v.push(arr)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

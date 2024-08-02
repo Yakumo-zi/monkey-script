@@ -113,6 +113,16 @@ func TestStringLiteral(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestArrayLiteral(t *testing.T) {
+	tests := []vmTestCase{
+		{"[]", []any{}},
+		{"[1,2,3]", []any{1, 2, 3}},
+		{"[1+2,2-3,3*4]", []any{3, -1, 12}},
+		{`[1+2,2-3,3*4,"Hello","World"]`, []any{3, -1, 12, "Hello", "World"}},
+	}
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
@@ -126,7 +136,6 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		vm := NewVM(comp.ByteCode())
 		err = vm.Run()
 		if err != nil {
-			fmt.Println(comp.ByteCode().Instructions.String())
 			t.Fatalf("vm error: %s", err)
 		}
 		stackElem := vm.LastPoppedStackElem()
@@ -153,12 +162,39 @@ func testExpectedObject(t *testing.T, expected any, actual object.Object) {
 		if err != nil {
 			t.Errorf("testStringObject failed: %s", err)
 		}
+	case []any:
+		err := testArrayObject(expected, actual)
+		if err != nil {
+			t.Errorf("testArrayObject failed: %s", err)
+		}
 	case *object.Null:
 		if actual != Null {
 			t.Errorf("object is not Null:%T %+v)", actual, actual)
 		}
 
 	}
+}
+func testArrayObject(expecteds []any, actual object.Object) error {
+	arr, ok := actual.(*object.ArrayObject)
+	if !ok {
+		return fmt.Errorf("object is not Array. got=%T (%+v)", actual, actual)
+	}
+	for i, o := range arr.Elements {
+		switch expected := expecteds[i].(type) {
+		case int64:
+			err := testIntegerObject(expected, o)
+			if err != nil {
+				return err
+			}
+		case string:
+			err := testStringObject(expected, o)
+			if err != nil {
+				fmt.Printf("%#v\n", arr.Elements)
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func testStringObject(expected string, actual object.Object) error {
@@ -183,12 +219,6 @@ func testBooleanObject(expected bool, actual object.Object) error {
 	return nil
 }
 
-func parse(input string) *ast.Program {
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	return p.ParseProgram()
-}
-
 func testIntegerObject(expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 	if !ok {
@@ -198,4 +228,10 @@ func testIntegerObject(expected int64, actual object.Object) error {
 		return fmt.Errorf("object has wrong value. want=%d, got=%d", expected, result.Value)
 	}
 	return nil
+}
+
+func parse(input string) *ast.Program {
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	return p.ParseProgram()
 }
