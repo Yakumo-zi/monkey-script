@@ -209,6 +209,9 @@ func testArrayObject(expecteds []any, actual object.Object) error {
 	if !ok {
 		return fmt.Errorf("object is not Array. got=%T (%+v)", actual, actual)
 	}
+	if len(expecteds) != len(arr.Elements) {
+		return fmt.Errorf("array length is wrong. want=%d, got=%d", len(expecteds), len(arr.Elements))
+	}
 	for i, o := range arr.Elements {
 		switch expected := expecteds[i].(type) {
 		case int64:
