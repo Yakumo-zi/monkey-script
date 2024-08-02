@@ -122,6 +122,15 @@ func TestArrayLiteral(t *testing.T) {
 	}
 	runVmTests(t, tests)
 }
+func TestHashLiteral(t *testing.T) {
+	tests := []vmTestCase{
+		{"{}", map[any]any{}},
+		{`{"one":1,"two":2,"three":3}`, map[any]any{"one": 1, "two": 2, "three": 3}},
+		{`{"one":1+2,"two":2-3,"three":3*4}`, map[any]any{"one": 3, "two": -1, "three": 12}},
+		{`{"one":1+2,"two":2-3,"three":3*4,"four":"Hello","five":"World"}`, map[any]any{"one": 3, "two": -1, "three": 12, "four": "Hello", "five": "World"}},
+	}
+	runVmTests(t, tests)
+}
 
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
@@ -167,6 +176,11 @@ func testExpectedObject(t *testing.T, expected any, actual object.Object) {
 		if err != nil {
 			t.Errorf("testArrayObject failed: %s", err)
 		}
+	case map[any]any:
+		err := testHashObject(t, expected, actual)
+		if err != nil {
+			t.Errorf("testHashObject failed: %s", err)
+		}
 	case *object.Null:
 		if actual != Null {
 			t.Errorf("object is not Null:%T %+v)", actual, actual)
@@ -174,6 +188,22 @@ func testExpectedObject(t *testing.T, expected any, actual object.Object) {
 
 	}
 }
+func testHashObject(t *testing.T, expected map[any]any, actual object.Object) error {
+	result, ok := actual.(*object.HashObject)
+	if !ok {
+		return fmt.Errorf("object is not Hash. got=%T (%+v)", actual, actual)
+	}
+	for k, v := range expected {
+		key := &object.StringObject{Value: k.(string)}
+		pair, ok := result.Pairs[key.HashKey()]
+		if !ok {
+			return fmt.Errorf("no pair for given key in Pairs")
+		}
+		testExpectedObject(t, v, pair.Value)
+	}
+	return nil
+}
+
 func testArrayObject(expecteds []any, actual object.Object) error {
 	arr, ok := actual.(*object.ArrayObject)
 	if !ok {
