@@ -12,6 +12,7 @@ type Compiler struct {
 	constants           []object.Object
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
+	symbolTabble        *SymbolTable
 }
 
 type EmittedInstruction struct {
@@ -25,6 +26,7 @@ func NewCompiler() *Compiler {
 		constants:           []object.Object{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
+		symbolTabble:        NewSymbolTable(),
 	}
 }
 func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
@@ -56,6 +58,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpPop)
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		sym := c.symbolTabble.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, sym.Index)
 	case *ast.PrefixExpression:
 		err := c.Compile(node.Right)
 		if err != nil {
@@ -149,6 +158,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			c.emit(code.OpFalse)
 		}
+	case *ast.Identifier:
+		sym, ok := c.symbolTabble.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("variable %s not define", node.Value)
+		}
+		c.emit(code.OpGetGlobal, sym.Index)
 	}
 	return nil
 }
