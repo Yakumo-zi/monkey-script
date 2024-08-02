@@ -134,9 +134,37 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpHash:
+			num := code.ReadUint16(v.instructions[ip+1:])
+			ip += 2
+			err := v.buildHashPairs(int(num))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+func (v *VM) buildHashPairs(num int) error {
+	hash := &object.HashObject{Pairs: make(map[object.HashKey]object.HashPair)}
+	for num > 0 {
+		value, err := v.pop()
+		if err != nil {
+			return err
+		}
+		key, err := v.pop()
+		if err != nil {
+			return err
+		}
+		switch hashable := key.(type) {
+		case object.Hashable:
+			hash.Pairs[hashable.HashKey()] = object.HashPair{Key: key, Value: value}
+		default:
+			return fmt.Errorf("type %s can't support hashable", hashable.Type())
+		}
+		num -= 2
+	}
+	return v.push(hash)
 }
 
 func isTruthy(obj object.Object) bool {

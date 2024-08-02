@@ -124,10 +124,15 @@ func TestArrayLiteral(t *testing.T) {
 }
 func TestHashLiteral(t *testing.T) {
 	tests := []vmTestCase{
-		{"{}", map[any]any{}},
-		{`{"one":1,"two":2,"three":3}`, map[any]any{"one": 1, "two": 2, "three": 3}},
-		{`{"one":1+2,"two":2-3,"three":3*4}`, map[any]any{"one": 3, "two": -1, "three": 12}},
-		{`{"one":1+2,"two":2-3,"three":3*4,"four":"Hello","five":"World"}`, map[any]any{"one": 3, "two": -1, "three": 12, "four": "Hello", "five": "World"}},
+		{"{}", map[object.HashKey]any{}},
+		{"{1:2,2:3}", map[object.HashKey]any{
+			(&object.Integer{Value: 1}).HashKey(): 2,
+			(&object.Integer{Value: 2}).HashKey(): 3,
+		}},
+		{"{1+2:2-3,2*3:3*4}", map[object.HashKey]any{
+			(&object.Integer{Value: 3}).HashKey(): -1,
+			(&object.Integer{Value: 6}).HashKey(): 12,
+		}},
 	}
 	runVmTests(t, tests)
 }
@@ -135,7 +140,8 @@ func TestHashLiteral(t *testing.T) {
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
-	for _, tt := range tests {
+	for idx, tt := range tests {
+		fmt.Printf("test %d start\n", idx)
 		program := parse(tt.input)
 		comp := compiler.NewCompiler()
 		err := comp.Compile(program)
@@ -149,6 +155,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		}
 		stackElem := vm.LastPoppedStackElem()
 		testExpectedObject(t, tt.expected, stackElem)
+		fmt.Printf("test %d end\n", idx)
 	}
 
 }
@@ -176,7 +183,7 @@ func testExpectedObject(t *testing.T, expected any, actual object.Object) {
 		if err != nil {
 			t.Errorf("testArrayObject failed: %s", err)
 		}
-	case map[any]any:
+	case map[object.HashKey]any:
 		err := testHashObject(t, expected, actual)
 		if err != nil {
 			t.Errorf("testHashObject failed: %s", err)
@@ -188,18 +195,20 @@ func testExpectedObject(t *testing.T, expected any, actual object.Object) {
 
 	}
 }
-func testHashObject(t *testing.T, expected map[any]any, actual object.Object) error {
+func testHashObject(t *testing.T, expected map[object.HashKey]any, actual object.Object) error {
 	result, ok := actual.(*object.HashObject)
 	if !ok {
 		return fmt.Errorf("object is not Hash. got=%T (%+v)", actual, actual)
 	}
-	for k, v := range expected {
-		key := &object.StringObject{Value: k.(string)}
-		pair, ok := result.Pairs[key.HashKey()]
+	if len(expected) != len(result.Pairs) {
+		return fmt.Errorf("hash length is wrong. want=%d, got=%d", len(expected), len(result.Pairs))
+	}
+	for expectedKey, expectedValue := range expected {
+		pair, ok := result.Pairs[expectedKey]
 		if !ok {
 			return fmt.Errorf("no pair for given key in Pairs")
 		}
-		testExpectedObject(t, v, pair.Value)
+		testExpectedObject(t, expectedValue, pair.Value)
 	}
 	return nil
 }

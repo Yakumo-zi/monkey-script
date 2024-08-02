@@ -371,6 +371,18 @@ func TestHashLiterals(t *testing.T) {
 			},
 		},
 		{
+			input:             "{1:2,2:3}",
+			expectedConstants: []any{1, 2, 2, 3},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpHash, 4),
+				code.Make(code.OpPop),
+			},
+		},
+		{
 			input:             "{1:2,3:4,5:6}",
 			expectedConstants: []any{1, 2, 3, 4, 5, 6},
 			expectedInstructions: []code.Instructions{
