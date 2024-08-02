@@ -179,8 +179,20 @@ func (v *VM) executeBinaryOperation(op code.Opcode) error {
 	if leftType == object.BOOLEAN_OBJ && rightType == object.BOOLEAN_OBJ {
 		return v.executeBooleanOperation(op, left, right)
 	}
-	return nil
+	if leftType == object.STRING_OBJ && rightType == object.STRING_OBJ {
+		return v.executeStringOperation(op, left, right)
+	}
+	return fmt.Errorf("type misstach,%s %s %s", string(leftType), string(op), string(rightType))
+}
+func (v *VM) executeStringOperation(op code.Opcode, left, right object.Object) error {
+	leftValue := left.(*object.StringObject).Value
+	rightValue := right.(*object.StringObject).Value
+	switch op {
+	case code.OpAdd:
+		return v.push(&object.StringObject{Value: leftValue + rightValue})
 
+	}
+	return nil
 }
 
 func (v *VM) executeBooleanOperation(op code.Opcode, left, right object.Object) error {

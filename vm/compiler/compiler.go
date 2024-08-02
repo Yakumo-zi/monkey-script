@@ -147,11 +147,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		afterElsePos := len([]byte(c.instructions))
 		c.changeOperand(jumpPos, afterElsePos)
-		return nil
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
-		return nil
 	case *ast.Boolean:
 		if node.Value {
 			c.emit(code.OpTrue)
@@ -164,6 +162,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("variable %s not define", node.Value)
 		}
 		c.emit(code.OpGetGlobal, sym.Index)
+	case *ast.StringLiteral:
+		stringLiteral := &object.StringObject{Value: node.Value}
+		c.emit(code.OpConstant, c.addConstant(stringLiteral))
 	}
 	return nil
 }
