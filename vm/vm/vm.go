@@ -3,11 +3,13 @@ package vm
 import (
 	"fmt"
 	"interpreter/object"
+
 	"vm/code"
 	"vm/compiler"
 )
 
 const StackSize = 2048
+const MaxFrames = 1024
 const GlobalSize = 65536
 
 var True = &object.Boolean{Value: true}
@@ -15,21 +17,43 @@ var False = &object.Boolean{Value: false}
 var Null = &object.Null{}
 
 type VM struct {
-	constants    []object.Object
-	instructions code.Instructions
-	stack        []object.Object
-	sp           int
-	globals      []object.Object
+	constants  []object.Object
+	stack      []object.Object
+	globals    []object.Object
+	frames     []*Frame
+	frameIndex int
+	sp         int
 }
 
 func NewVM(bytecode *compiler.ByteCode) *VM {
+
+	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
+	mainFrame := NewFrame(mainFn)
+
+	frames := make([]*Frame, MaxFrames)
+	frames[0] = mainFrame
 	return &VM{
-		instructions: bytecode.Instructions,
-		constants:    bytecode.Constants,
-		stack:        make([]object.Object, StackSize),
-		sp:           0,
-		globals:      make([]object.Object, GlobalSize),
+		constants:  bytecode.Constants,
+		stack:      make([]object.Object, StackSize),
+		sp:         0,
+		globals:    make([]object.Object, GlobalSize),
+		frames:     frames,
+		frameIndex: 1,
 	}
+}
+
+func (v *VM) currentFrame() *Frame {
+	return v.frames[v.frameIndex-1]
+}
+
+func (v *VM) pushFrame(f *Frame) {
+	v.frames[v.frameIndex] = f
+	v.frameIndex++
+}
+
+func (v *VM) popFrame() *Frame {
+	v.frameIndex--
+	return v.frames[v.frameIndex]
 }
 
 func (v *VM) LastPoppedStackElem() object.Object {
@@ -43,12 +67,18 @@ func (v *VM) StackTop() object.Object {
 }
 
 func (v *VM) Run() error {
-	for ip := 0; ip < len(v.instructions); ip++ {
-		op := code.Opcode(v.instructions[ip])
+	var ip int
+	var ins code.Instructions
+	var op code.Opcode
+
+	for v.currentFrame().ip < len(v.currentFrame().Instructions()) {
+		ip = v.currentFrame().ip
+		ins = v.currentFrame().Instructions()
+		op = code.Opcode(ins[ip])
 		switch op {
 		case code.OpConstant:
-			constIndex := code.ReadUint16(v.instructions[ip+1:])
-			ip += 2
+			constIndex := code.ReadUint16(ins[ip+1:])
+			v.currentFrame().ip += 2
 			err := v.push(v.constants[constIndex])
 			if err != nil {
 				return err
@@ -85,17 +115,17 @@ func (v *VM) Run() error {
 				return err
 			}
 		case code.OpJump:
-			pos := int(code.ReadUint16(v.instructions[ip+1:]))
-			ip = pos - 1
+			pos := int(code.ReadUint16(ins[ip+1:]))
+			v.currentFrame().ip = pos - 1
 		case code.OpJumpNotTruthy:
-			pos := int(code.ReadUint16(v.instructions[ip+1:]))
-			ip += 2
+			pos := int(code.ReadUint16(ins[ip+1:]))
+			v.currentFrame().ip += 2
 			condition, err := v.pop()
 			if err != nil {
 				return err
 			}
 			if !isTruthy(condition) {
-				ip = pos - 1
+				v.currentFrame().ip = pos - 1
 			}
 		case code.OpNull:
 			err := v.push(Null)
@@ -103,24 +133,24 @@ func (v *VM) Run() error {
 				return err
 			}
 		case code.OpSetGlobal:
-			idx := code.ReadUint16(v.instructions[ip+1:])
-			ip += 2
+			idx := code.ReadUint16(ins[ip+1:])
+			v.currentFrame().ip += 2
 			val, err := v.pop()
 			if err != nil {
 				return err
 			}
 			v.globals[idx] = val
 		case code.OpGetGlobal:
-			idx := code.ReadUint16(v.instructions[ip+1:])
-			ip += 2
+			idx := code.ReadUint16(ins[ip+1:])
+			v.currentFrame().ip += 2
 			val := v.globals[idx]
 			err := v.push(val)
 			if err != nil {
 				return err
 			}
 		case code.OpArray:
-			num := code.ReadUint16(v.instructions[ip+1:])
-			ip += 2
+			num := code.ReadUint16(ins[ip+1:])
+			v.currentFrame().ip += 2
 			arr := &object.ArrayObject{Elements: make([]object.Object, num)}
 			for num > 0 {
 				elm, err := v.pop()
@@ -135,8 +165,8 @@ func (v *VM) Run() error {
 				return err
 			}
 		case code.OpHash:
-			num := code.ReadUint16(v.instructions[ip+1:])
-			ip += 2
+			num := code.ReadUint16(ins[ip+1:])
+			v.currentFrame().ip += 2
 			err := v.buildHashPairs(int(num))
 			if err != nil {
 				return err
@@ -154,8 +184,11 @@ func (v *VM) Run() error {
 			if err != nil {
 				return err
 			}
-
+		case code.OpReturnValue:
+		case code.OpReturn:
+		case code.OpCall:
 		}
+		v.currentFrame().ip++
 	}
 	return nil
 }

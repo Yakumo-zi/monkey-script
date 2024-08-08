@@ -246,7 +246,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if c.lastInstructionIs(code.OpPop) {
 			c.replaceLastPopWithReturn()
 		}
-		if len(c.currentInstrunction()) == 0 {
+		if !c.lastInstructionIs(code.OpReturnValue) {
 			c.emit(code.OpReturn)
 		}
 		instructions := c.leaveScope()
@@ -258,6 +258,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return nil
 		}
 		c.emit(code.OpReturnValue)
+	case *ast.CallExpression:
+		err := c.Compile(node.Function)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpCall)
 	}
 	return nil
 }

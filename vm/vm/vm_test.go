@@ -165,6 +165,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		}
 		vm := NewVM(comp.ByteCode())
 		err = vm.Run()
+		fmt.Println(comp.ByteCode().Instructions.String())
 		if err != nil {
 			t.Fatalf("vm error: %s", err)
 		}
