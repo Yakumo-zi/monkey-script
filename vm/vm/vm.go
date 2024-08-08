@@ -71,7 +71,8 @@ func (v *VM) Run() error {
 	var ins code.Instructions
 	var op code.Opcode
 
-	for v.currentFrame().ip < len(v.currentFrame().Instructions()) {
+	for v.currentFrame().ip < len(v.currentFrame().Instructions())-1 {
+		v.currentFrame().ip++
 		ip = v.currentFrame().ip
 		ins = v.currentFrame().Instructions()
 		op = code.Opcode(ins[ip])
@@ -185,10 +186,26 @@ func (v *VM) Run() error {
 				return err
 			}
 		case code.OpReturnValue:
+			returnValue, err := v.pop()
+			if err != nil {
+				return err
+			}
+			v.popFrame()
+			// 弹出CompiledFunction object
+			_, err = v.pop()
+			if err != nil {
+				return err
+			}
+			v.push(returnValue)
 		case code.OpReturn:
 		case code.OpCall:
+			fn, ok := v.StackTop().(*object.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("calling non-funcion")
+			}
+			frame := NewFrame(fn)
+			v.pushFrame(frame)
 		}
-		v.currentFrame().ip++
 	}
 	return nil
 }

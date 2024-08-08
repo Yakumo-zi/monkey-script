@@ -152,11 +152,22 @@ func TestIndexExpressions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestCallingFunctionWithoutArguments(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+			let fivePlusTen=fn(){5+10;};
+			fivePlusTen()`,
+			expected: 15,
+		},
+	}
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
-	for idx, tt := range tests {
-		fmt.Printf("test %d start\n", idx)
+	for _, tt := range tests {
 		program := parse(tt.input)
 		comp := compiler.NewCompiler()
 		err := comp.Compile(program)
@@ -165,13 +176,11 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		}
 		vm := NewVM(comp.ByteCode())
 		err = vm.Run()
-		fmt.Println(comp.ByteCode().Instructions.String())
 		if err != nil {
 			t.Fatalf("vm error: %s", err)
 		}
 		stackElem := vm.LastPoppedStackElem()
 		testExpectedObject(t, tt.expected, stackElem)
-		fmt.Printf("test %d end\n", idx)
 	}
 
 }

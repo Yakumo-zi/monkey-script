@@ -14,7 +14,7 @@ type Frame struct {
 func NewFrame(fn *object.CompiledFunction) *Frame {
 	return &Frame{
 		fn: fn,
-		ip: 0,
+		ip: -1,
 	}
 }
 
