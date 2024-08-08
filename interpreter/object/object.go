@@ -15,16 +15,17 @@ type Hashable interface {
 }
 
 const (
-	INTEGER_OBJ  = "INTEGER"
-	BOOLEAN_OBJ  = "BOOLEAN"
-	NULL_OBJ     = "NULL"
-	RETURN_OBJ   = "RETURN"
-	ERROR_OBJ    = "ERROR"
-	FUNCTION_OBJ = "FUNCTIOn"
-	STRING_OBJ   = "STRING"
-	BUILTIN_OBJ  = "BUILTIN"
-	ARRAY_OBJ    = "ARRAY"
-	HASH_OBJ     = "HASH"
+	INTEGER_OBJ           = "INTEGER"
+	BOOLEAN_OBJ           = "BOOLEAN"
+	NULL_OBJ              = "NULL"
+	RETURN_OBJ            = "RETURN"
+	ERROR_OBJ             = "ERROR"
+	FUNCTION_OBJ          = "FUNCTIOn"
+	STRING_OBJ            = "STRING"
+	BUILTIN_OBJ           = "BUILTIN"
+	ARRAY_OBJ             = "ARRAY"
+	HASH_OBJ              = "HASH"
+	COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION"
 )
 
 type BuiltinFunction func(args ...Object) Object
@@ -254,4 +255,20 @@ func (s *StringObject) HashKey() HashKey {
 	h := fnv.New64a()
 	h.Write([]byte(s.Value))
 	return HashKey{Ty: s.Type(), Value: h.Sum64()}
+}
+
+var _ Object = (*CompiledFunction)(nil)
+
+type CompiledFunction struct {
+	Instructions []byte
+}
+
+// Inspect implements Object.
+func (c *CompiledFunction) Inspect() string {
+	return fmt.Sprintf("CompiledFunction[%p]", c)
+}
+
+// Type implements Object.
+func (c *CompiledFunction) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJ
 }
