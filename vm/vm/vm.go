@@ -198,6 +198,14 @@ func (v *VM) Run() error {
 			}
 			v.push(returnValue)
 		case code.OpReturn:
+			v.popFrame()
+			// 弹出CompiledFunction object
+			_, err := v.pop()
+			if err != nil {
+				return err
+			}
+			v.push(Null)
+
 		case code.OpCall:
 			fn, ok := v.StackTop().(*object.CompiledFunction)
 			if !ok {
