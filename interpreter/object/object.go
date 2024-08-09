@@ -261,6 +261,7 @@ var _ Object = (*CompiledFunction)(nil)
 
 type CompiledFunction struct {
 	Instructions []byte
+	NumLocals    int
 }
 
 // Inspect implements Object.

@@ -20,10 +20,10 @@ type CompilationScope struct {
 }
 
 type Compiler struct {
-	symbolTabble *SymbolTable
-	constants    []object.Object
-	scopes       []CompilationScope
-	scopeIndex   int
+	symboltable *SymbolTable
+	constants   []object.Object
+	scopes      []CompilationScope
+	scopeIndex  int
 }
 
 func NewCompiler() *Compiler {
@@ -33,9 +33,9 @@ func NewCompiler() *Compiler {
 		previousInstruction: EmittedInstruction{},
 	}
 	return &Compiler{
-		constants:    []object.Object{},
-		scopes:       []CompilationScope{mainScope},
-		symbolTabble: NewSymbolTable(),
+		constants:   []object.Object{},
+		scopes:      []CompilationScope{mainScope},
+		symboltable: NewSymbolTable(),
 	}
 }
 
@@ -45,11 +45,13 @@ func (c *Compiler) enterScope() {
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
 	}
+	c.symboltable = NewEnclosedSymbolTable(c.symboltable)
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
 }
 func (c *Compiler) leaveScope() code.Instructions {
 	instructions := c.currentInstrunction()
+	c.symboltable = c.symboltable.Outer
 	c.scopes = c.scopes[:len(c.scopes)-1]
 	c.scopeIndex--
 	return instructions
@@ -92,8 +94,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-		sym := c.symbolTabble.Define(node.Name.Value)
-		c.emit(code.OpSetGlobal, sym.Index)
+		sym := c.symboltable.Define(node.Name.Value)
+		if sym.Scope == GlobalScope {
+
+			c.emit(code.OpSetGlobal, sym.Index)
+		} else {
+			c.emit(code.OpSetLocal, sym.Index)
+		}
 	case *ast.ArrayLiteral:
 		for _, e := range node.Elements {
 			err := c.Compile(e)
@@ -223,11 +230,15 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpFalse)
 		}
 	case *ast.Identifier:
-		sym, ok := c.symbolTabble.Resolve(node.Value)
+		sym, ok := c.symboltable.Resolve(node.Value)
 		if !ok {
 			return fmt.Errorf("variable %s not define", node.Value)
 		}
-		c.emit(code.OpGetGlobal, sym.Index)
+		if sym.Scope == GlobalScope {
+			c.emit(code.OpGetGlobal, sym.Index)
+		} else {
+			c.emit(code.OpGetLocal, sym.Index)
+		}
 	case *ast.StringLiteral:
 		stringLiteral := &object.StringObject{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(stringLiteral))
@@ -249,8 +260,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !c.lastInstructionIs(code.OpReturnValue) {
 			c.emit(code.OpReturn)
 		}
+		numLocals := c.symboltable.numDefinitions
 		instructions := c.leaveScope()
-		compileFn := &object.CompiledFunction{Instructions: instructions}
+		compileFn := &object.CompiledFunction{Instructions: instructions, NumLocals: numLocals}
 		c.emit(code.OpConstant, c.addConstant(compileFn))
 	case *ast.ReturnStatement:
 		err := c.Compile(node.ReturnValue)
