@@ -260,8 +260,9 @@ func (s *StringObject) HashKey() HashKey {
 var _ Object = (*CompiledFunction)(nil)
 
 type CompiledFunction struct {
-	Instructions []byte
-	NumLocals    int
+	Instructions  []byte
+	NumLocals     int
+	NumParameters int
 }
 
 // Inspect implements Object.

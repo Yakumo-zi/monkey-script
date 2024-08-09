@@ -207,14 +207,12 @@ func (v *VM) Run() error {
 			}
 
 		case code.OpCall:
-			fn, ok := v.StackTop().(*object.CompiledFunction)
-			if !ok {
-				return fmt.Errorf("calling non-funcion")
+			numArgs := ins[ip+1]
+			v.currentFrame().ip += 1
+			err := v.callFunction(int(numArgs))
+			if err != nil {
+				return err
 			}
-			fmt.Println(code.Instructions(fn.Instructions).String())
-			frame := NewFrame(fn, v.sp)
-			v.pushFrame(frame)
-			v.sp = frame.basePointer + fn.NumLocals
 		case code.OpSetLocal:
 			localIndex := ins[ip+1]
 			v.currentFrame().ip += 1
@@ -230,6 +228,19 @@ func (v *VM) Run() error {
 			}
 		}
 	}
+	return nil
+}
+func (v *VM) callFunction(numArgs int) error {
+	fn, ok := v.stack[v.sp-1-int(numArgs)].(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("calling non-funcion")
+	}
+	if numArgs != fn.NumParameters {
+		return fmt.Errorf("wrong number of arguments, want %d, got %d", fn.NumParameters, numArgs)
+	}
+	frame := NewFrame(fn, v.sp-numArgs)
+	v.pushFrame(frame)
+	v.sp = frame.basePointer + fn.NumLocals
 	return nil
 }
 
